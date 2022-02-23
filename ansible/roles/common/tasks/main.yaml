@@ -15,4 +15,41 @@
       ██║██║╚██╔╝██║██║╚██╔╝██║██║   ██║   ██║   ██╔══██║██╔══██╗██║     ██╔══╝  
       ██║██║ ╚═╝ ██║██║ ╚═╝ ██║╚██████╔╝   ██║   ██║  ██║██████╔╝███████╗███████╗
       ╚═╝╚═╝     ╚═╝╚═╝     ╚═╝ ╚═════╝    ╚═╝   ╚═╝  ╚═╝╚═════╝ ╚══════╝╚══════╝
-                                                                          
+- name: Add /etc/hosts
+  copy:
+    dest: /etc/hosts
+    content: 127.0.0.1 localhost
+
+- name: Install openjdk-17-jdk
+  apt:
+    name: openjdk-17-jdk
+
+- name: Clone app
+  get_url:
+    url: https://github.com/fteychene/prometheus-app-sample/releases/download/0.1.0/prometheus_metric_generator.jar
+    dest: /home/debian/prometheus_metric_generator.jar
+
+- name: Create service
+  copy:
+    dest: /etc/systemd/system/prometheus-app-simple.service
+    content: |
+      [Unit]
+      Description=prometheus app simple
+      After=network.target
+      StartLimitIntervalSec=0
+
+      [Service]
+      Type=simple
+      Restart=always
+      RestartSec=1
+      User=debian
+      ExecStart=/usr/bin/java -jar /home/debian/prometheus_metric_generator.jar 
+
+      [Install]
+      WantedBy=multi-user.target
+
+- name: Enable app service
+  ansible.builtin.systemd:
+    name: prometheus-app-simple
+    enabled: yes
+    masked: no
